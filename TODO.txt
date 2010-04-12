@@ -1,0 +1,5 @@
+TODO:
+  - Position windows on screen.
+  - Create icon set.
+  - Add status bars
+  - Finish about box

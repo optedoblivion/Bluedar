@@ -1,0 +1,68 @@
+#!/bin/bash
+
+# source application-specific settings
+# Setup these config files for custom configs
+#[ -f /etc/conf.d/bluedard ] && . /etc/conf.d/bluedard
+
+# general config
+# This is for the rc.d contants/functions
+. /etc/rc.conf
+. /etc/rc.d/functions
+
+
+getPID() {
+  echo `ps ax|grep BlueDarD.py|grep -v grep|awk '{ print $1 }'`
+}
+
+case "$1" in
+  start)
+    stat_busy "Starting BlueDarD"
+    if [ -z "$(getPID)" ]; then
+       python /usr/bin/BlueDarD.py > /var/log/bluedard.log&
+      if [ $? -gt 0 ]; then
+        stat_fail
+        exit 1
+      else
+        sleep 1
+        if [ -z "$(getPID)" ]; then
+          stat_fail
+          exit 1
+        else
+          echo $(getPID) >/var/run/bluedard.pid
+          add_daemon bluedard
+          stat_done
+        fi
+      fi
+    else
+      stat_fail
+      exit 1
+    fi
+    ;;
+
+  stop)
+    stat_busy "Stopping BlueDarD"
+    if [ ! -z "$(getPID)" ]; then
+      kill $(getPID) &> /dev/null
+      if [ $? -gt 0 ]; then
+        stat_fail
+        exit 1
+      else
+        rm -f /var/run/bluedard.pid &>/dev/null
+        rm_daemon bluedard
+        stat_done
+      fi
+    else
+      stat_fail
+      exit 1
+    fi
+    ;;
+
+  restart)
+    $0 stop
+    sleep 3
+    $0 start
+    ;;
+  *)
+    echo "usage: $0 {start|stop|restart}"
+esac
+exit 0
